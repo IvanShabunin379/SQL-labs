@@ -286,7 +286,7 @@ SELECT DISTINCT U.login
 FROM users U 
 	JOIN bets B ON U.id = B.user_id
 	JOIN events_outcomes EO ON (B.event_id = EO.event_id AND B.outcome_id = EO.outcome_id)
-WHERE EO.odd = 2.0;
+WHERE EO.occured = true AND EO.odd = 2.0;
 
 -- 25. Выбрать пары пользователей с разными логинами, но одинаковыми паролями.
 

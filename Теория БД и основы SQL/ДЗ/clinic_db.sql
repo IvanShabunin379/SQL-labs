@@ -1,35 +1,60 @@
+-- Создание таблиц
+
 CREATE TYPE SEX AS ENUM ('male', 'female');
 
 CREATE TABLE doctors (
-	personnel_number SERIAL PRIMARY KEY,
-	last_name TEXT NOT NULL,
-	first_name TEXT NOT NULL,
-	patronymic TEXT,
-	date_of_birth DATE NOT NULL,
-	sex SEX NOT NULL,
-	phone_number VARCHAR(18)
+    personnel_number SERIAL PRIMARY KEY,
+    last_name TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    patronymic TEXT,
+    date_of_birth DATE NOT NULL,
+    sex SEX NOT NULL,
+    phone_number TEXT,
+    specialization TEXT,
+    license_number TEXT UNIQUE,
+    hire_date DATE NOT NULL,
+    CONSTRAINT valid_phone CHECK (phone_number IS NULL OR phone_number ~ '^\+?[0-9\-\(\) ]+$')
 );
 
 CREATE TABLE patients (
-	id SERIAL PRIMARY KEY,
-	last_name TEXT NOT NULL,
-	first_name TEXT NOT NULL,
-	patronymic TEXT,
-	date_of_birth DATE NOT NULL,
-	sex SEX NOT NULL,
-	address TEXT,
-	phone_number VARCHAR(18),
-	medical_policy_number CHAR[16]
+    id SERIAL PRIMARY KEY,
+    last_name TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    patronymic TEXT,
+    date_of_birth DATE NOT NULL,
+    sex SEX NOT NULL,
+    address TEXT,
+    phone_number TEXT,
+    medical_policy_number TEXT UNIQUE,
+    registration_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    CONSTRAINT valid_policy_number CHECK (medical_policy_number ~ '^[0-9]{16}$'),
+    CONSTRAINT valid_patient_phone CHECK (phone_number IS NULL OR phone_number ~ '^\+?[0-9\-\(\) ]+$')
 );
 
 CREATE TABLE receptions (
-	id SERIAL PRIMARY KEY,
-	reception_date DATE NOT NULL,
-	symptoms TEXT,
-	doctor_personnel_number
+    id SERIAL PRIMARY KEY,
+    reception_date DATE NOT NULL,
+    reception_time TIME NOT NULL,
+    symptoms TEXT NOT NULL,
+    diagnosis TEXT,
+    prescriptions TEXT,
+    doctor_personnel_number INTEGER NOT NULL REFERENCES doctors(personnel_number),
+    patient_id INTEGER NOT NULL REFERENCES patients(id),
+    CONSTRAINT unique_reception UNIQUE (reception_date, reception_time, doctor_personnel_number),
+    CONSTRAINT future_reception CHECK (reception_date <= CURRENT_DATE)
+);
+
+CREATE TABLE medical_records (
+    id SERIAL PRIMARY KEY,
+    patient_id INTEGER NOT NULL REFERENCES patients(id),
+    record_date DATE NOT NULL,
+    record_text TEXT NOT NULL,
+    doctor_personnel_number INTEGER REFERENCES doctors(personnel_number),
+    reception_id INTEGER REFERENCES receptions(id)
 );
 
 
+-- Запросы на выборку данных из БД
 
 -- 1. Удалить данные о пациенте Иванове Иване Ивановиче
 
@@ -99,7 +124,6 @@ JOIN doctors Doc
 ON Doc.personnal_number = Rec.doctor_personnal_number
 WHERE Doc.
 
-
 -- 17. Вывести общее количество врачей
 
 SELECT COUNT(*)
@@ -108,3 +132,12 @@ FROM doctors;
 /* 19. Вывести фамилию, имя, отчество пациента, дату приема,
 симптомы, предписания больному и фамилию, имя, отчество врача, осуществившего прием. */
 
+SELECT Pat.last_name || ' ' || Pat.first_name || ' ' || COALESCE(Pat.patronymic, '') AS patient_name,
+       Rec.reception_date,
+       Rec.symptoms,
+       Rec.prescriptions,
+       Doc.last_name || ' ' || Doc.first_name || ' ' || COALESCE(Doc.patronymic, '') AS doctor_name
+FROM receptions Rec
+JOIN patients Pat ON Rec.patient_id = Pat.id
+JOIN doctors Doc ON Rec.doctor_personnel_number = Doc.personnel_number
+ORDER BY Rec.reception_date DESC, Pat.last_name, Pat.first_name;

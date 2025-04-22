@@ -1,3 +1,75 @@
+-- Создание таблиц
+
+CREATE TABLE faculties (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    dean_id INTEGER
+);
+
+CREATE TABLE lecturers (
+    id SERIAL PRIMARY KEY,
+    last_name TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    middle_name TEXT,
+    birth_date DATE NOT NULL,
+    email TEXT,
+    faculty_id INTEGER REFERENCES faculties(id),
+    supervisor_id INTEGER REFERENCES lecturers(id)
+);
+
+ALTER TABLE faculties 
+ADD CONSTRAINT fk_faculties_dean 
+FOREIGN KEY (dean_id) REFERENCES lecturers(id);
+
+CREATE TABLE positions (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    salary DECIMAL(10,2) NOT NULL
+);
+
+
+CREATE TABLE lecturer_positions (
+    id SERIAL PRIMARY KEY,
+    lecturer_id INTEGER NOT NULL REFERENCES lecturers(id),
+    position_id INTEGER NOT NULL REFERENCES positions(id),
+    start_date DATE NOT NULL,
+    end_date DATE,
+    CONSTRAINT valid_dates CHECK (end_date IS NULL OR start_date <= end_date)
+);
+
+
+CREATE TABLE disciplines (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE students (
+    student_id_number TEXT PRIMARY KEY,
+    last_name TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    middle_name TEXT,
+    birth_date DATE NOT NULL,
+    course INTEGER NOT NULL CHECK (course BETWEEN 1 AND 6),
+    group_number TEXT NOT NULL,
+    scholarship DECIMAL(10,2) DEFAULT 0,
+    faculty_id INTEGER NOT NULL REFERENCES faculties(id)
+);
+
+
+CREATE TABLE performances (
+    id SERIAL PRIMARY KEY,
+    date_of_performance DATE NOT NULL,
+    student_id_number TEXT NOT NULL REFERENCES students(student_id_number),
+    discipline_id INTEGER NOT NULL REFERENCES disciplines(id),
+    lecturer_id INTEGER NOT NULL REFERENCES lecturers(id),
+    grade INTEGER NOT NULL CHECK (grade BETWEEN 1 AND 5),
+    CONSTRAINT unique_performance UNIQUE (student_id_number, discipline_id, date_of_performance)
+);
+
+
+-- Запросы на выборку данных из БД
+
 -- 20. Выбрать количество студентов, получивших неудовлетворительные оценки за последнюю зимнюю сессию.
 
 SELECT COUNT(DISTINCT student_id_number)
