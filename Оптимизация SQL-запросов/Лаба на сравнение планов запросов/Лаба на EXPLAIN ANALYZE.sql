@@ -2,22 +2,16 @@
 по названию в лексикографическом порядке. */
 
 -- вариант с ORDER BY и LIMIT
+EXPLAIN ANALYZE
 SELECT name
 FROM tournaments
 ORDER BY name
 LIMIT 1;
 
 -- вариант с MIN
+EXPLAIN ANALYZE
 SELECT MIN(name) 
 FROM tournaments;
-
-
-
-
--- Подправить 24
-
-
-
 
 -- 27. Выбрать количество пользователей однофамильцев-тезок среди пользователей
 
@@ -37,12 +31,14 @@ FROM (SELECT first_name, last_name, COUNT(id) AS namesakes_count
 
 -- 41. Выбрать все данные о пользователях ни разу не делавших ставки.
 
+EXPLAIN ANALYZE
 SELECT U.*
 FROM users U
 WHERE NOT EXISTS (SELECT 1
 				  FROM bets B
 				  WHERE B.user_id = U.id);
-				  
+
+EXPLAIN ANALYZE				  
 SELECT U.*
 FROM users U LEFT JOIN bets B
 	ON U.id = B.user_id
@@ -51,11 +47,13 @@ WHERE B.id IS NULL;
 
 -- 44. Выбрать все данные пользователей, чья фамилия совпадает с названием команды.
 
+EXPLAIN ANALYZE
 SELECT U.*
 FROM users U JOIN participants P
 	ON U.last_name = P.name 
 		AND P.participant_type IN ('club', 'national team');
 
+EXPLAIN ANALYZE
 SELECT U.*
 FROM users U
 WHERE U.last_name = ANY(SELECT P.name
@@ -67,6 +65,7 @@ WHERE U.last_name = ANY(SELECT P.name
 -- 47. Выбрать пользователей, сделавших ставки на всех чемпионатах.
 
 -- оптимально (без CTE)
+EXPLAIN ANALYZE
 SELECT U.login
 FROM users U
 	JOIN bets B ON U.id = B.user_id
@@ -77,6 +76,7 @@ HAVING COUNT(DISTINCT T.id) = (SELECT COUNT(id)
 						   	   FROM tournaments_in_seasons);
 
 -- неоптимально (с CTE)
+EXPLAIN ANALYZE
 WITH tournaments_count_by_user AS (
 	SELECT U.login AS login, 
 		   COUNT(DISTINCT T.id) AS tournaments_count
